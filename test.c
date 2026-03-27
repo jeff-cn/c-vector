@@ -163,5 +163,6 @@ int main() {
     }
 
     cvector_free(str_vect);
+
     return 0;
 }
