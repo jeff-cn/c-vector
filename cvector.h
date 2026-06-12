@@ -62,6 +62,31 @@ typedef struct cvector_metadata_t {
     cvector_elem_destructor_t elem_destructor;
 } cvector_metadata_t;
 
+/* C++ requires explicit casts between pointer types when C does not.
+ * cvector_typeof either does nothing since typeof in C was introduced
+ * too late (only in C23) and C can happily cast implicitly, or returns
+ * the type of a given expression depending on the language
+ */
+#ifdef __cplusplus
+/* When macros are used, arguments are often get enclosed in
+ * parentheses. When decltype() gets a parenthesized expression, it
+ * also makes the type a reference and C++ compiler complains about
+ * this during the cast. Taking an address of the first element removes
+ * the reference part
+ */
+/**
+ * @brief cvector_typeof - Return a type of the expression
+ * @param expr An expression to examine
+ */
+#define cvector_typeof(expr) decltype(&(expr)[0])
+#else
+/**
+ * @brief cvector_typeof - Stub macro returning void *
+ * @param _ Stub parameter
+ */
+#define cvector_typeof(_) void *
+#endif
+
 /**
  * @brief cvector_vector_type - The vector type used in this library
  * @param type The type of vector to act on.
@@ -407,11 +432,11 @@ typedef struct cvector_metadata_t {
             void *cv_grow_p1__ = cvector_vec_to_base(vec);                                 \
             void *cv_grow_p2__ = cvector_clib_realloc(cv_grow_p1__, cv_grow_sz__);         \
             cvector_clib_assert(cv_grow_p2__);                                             \
-            (vec) = cvector_base_to_vec(cv_grow_p2__);                                     \
+            (vec) = (cvector_typeof(vec))cvector_base_to_vec(cv_grow_p2__);                \
         } else {                                                                           \
             void *cv_grow_p__ = cvector_clib_malloc(cv_grow_sz__);                         \
             cvector_clib_assert(cv_grow_p__);                                              \
-            (vec) = cvector_base_to_vec(cv_grow_p__);                                      \
+            (vec) = (cvector_typeof(vec))cvector_base_to_vec(cv_grow_p__);                 \
             cvector_set_size((vec), 0);                                                    \
             cvector_set_elem_destructor((vec), NULL);                                      \
         }                                                                                  \
